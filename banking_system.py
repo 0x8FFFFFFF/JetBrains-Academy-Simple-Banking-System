@@ -19,25 +19,47 @@ class Account(Card):
         self.pin = ''.join(map(str, sample(range(0, 9), 4)))     # generator of random 4 digits pin code
 
 
+class Menu:
+    """Menu of the program"""
+    def __init__(self):
+        self.__choice = '0'
+
+    def __repr__(self):
+        return self.__choice
+
+    def __eq__(self, other):
+        return True if self.__choice == other else False
+
+    @staticmethod
+    def __show_main_menu():
+        print('1. Create an account')
+        print('2. Log into account')
+        print('0. Exit')
+
+    @staticmethod
+    def __show_account_menu():
+        print('1. Balance')
+        print('2. Log out')
+        print('0. Exit')
+
+    def show_and_get_choice(self):
+        if self.__choice.startswith('2'):
+            self.__show_account_menu()
+            self.__choice = f'{self.__choice[0]}.{input()}'
+        else:
+            self.__show_main_menu()
+            self.__choice = input()
+
+    def back_to_main(self):
+        self.__choice = '0'
+
+
 class Banking:
     """Banking system"""
     def __init__(self):
-        self.menu_choice = ''
+        self.menu = Menu()
         self.current_account = None
         self.accounts = {}  # temporary dict (database) for accounts
-
-    def menu(self, types='main'):
-        """The program menu, shows menu items and processes user input and menu selection"""
-        if types == 'main':
-            print('1. Create an account')
-            print('2. Log into account')
-            print('0. Exit')
-            self.menu_choice = input()
-        elif types == 'account':
-            print('1. Balance')
-            print('2. Log out')
-            print('0. Exit')
-            self.menu_choice += '.' + input()  # create submenu
 
     def create_account(self):
         """Creates a customer account"""
@@ -46,9 +68,9 @@ class Banking:
         # show the result according to the condition of the task
         print('Your card has been created')
         print('Your card number:')
-        print(f'{account.number}')
+        print(f'{self.accounts[account.id].number}')
         print('Your card PIN:')
-        print(f'{account.pin}')
+        print(f'{self.accounts[account.id].pin}\n')
 
     def login(self):
         """Implements user login to the account.
@@ -61,36 +83,36 @@ class Banking:
         print('Enter your PIN:')
         pin = input()
         # check the correctness of the entered data
-        for account in self.accounts:
+        for account in self.accounts.values():
             if account.number == number:
                 if account.pin == pin:
                     print('You have successfully logged in!\n')
                     self.current_account = account
-                    self.menu(types='account')  # show submenu for customer account
                     return
         print('Wrong card number or PIN!\n')
+        self.menu.back_to_main()
 
     def show_balance(self):
         """Shows client balance"""
-        print(f'Balance: {self.current_account.balance}')
-        self.menu(types='account')
+        print(f'Balance: {self.current_account.balance}\n')
 
     def log_out(self):
+        """Shows the main menu, allowing the client to log in with another account."""
         print('You have successfully logged out!\n')
-        self.menu()  # shows main menu
+        self.menu.back_to_main()
 
     def run(self):
         """Main logic of the program"""
         while True:
-            self.menu()
+            self.menu.show_and_get_choice()
             # fulfill the wishes of the client
-            if self.menu_choice == '1':
+            if self.menu == '1':
                 self.create_account()
-            elif self.menu_choice == '2':
+            elif self.menu == '2':
                 self.login()
-            elif self.menu_choice == '2.1':
+            elif self.menu == '2.1':
                 self.show_balance()
-            elif self.menu_choice == '2.2':
+            elif self.menu == '2.2':
                 self.log_out()
             else:
                 print('Bye!')
