@@ -1,6 +1,6 @@
 # JetBrains Academy/Python Developer
 # Project: Simple Banking System
-# Stage 1/4: Card anatomy
+# Stage 2/4: Luhn algorithm
 
 from random import sample, randint
 from datetime import datetime
@@ -19,8 +19,22 @@ class Account(Card):
     Since, by condition, a client can have only one bank card, then client id = card id."""
     def __init__(self):
         self.id = int(datetime.today().strftime("%d%H%M%S")) + randint(10, 20) * 10  # generator of account identifier
-        self.number = str(4000000000000000 + self.id)            # generator of number of the card
-        self.pin = ''.join(map(str, sample(range(0, 9), 4)))     # generator of random 4 digits pin code
+        self.number = self.luhn(str(4000000000000000 + self.id))            # generator of 16 digits number of the card
+        self.pin = ''.join(map(str, sample(range(0, 9), 4)))                # generator of random 4 digits pin code
+
+    @staticmethod
+    def luhn(num):
+        """Adds a checksum to the bank card number using the Luhn algorithm.
+        It takes the card number as a string value and returns the card number
+        where the last digit replaced by the checksum."""
+        num = num[:-1]  # drop the last digit
+        list_num = []
+        for c, n in enumerate(num, 1):
+            if c % 2:  # multiply odd digits by 2
+                n = int(n) * 2
+            list_num.append(int(n - 9 if n > 9 else n))  # subtract 9 to number over 9
+        n = sum(list_num) % 10
+        return num + str(10 - n if n else n)
 
 
 class Menu:
