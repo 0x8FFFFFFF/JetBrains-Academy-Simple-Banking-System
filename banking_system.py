@@ -30,9 +30,10 @@ class Account(Card):
         num = num[:-1]  # drop the last digit
         list_num = []
         for c, n in enumerate(num, 1):
+            n = int(n)
             if c % 2:  # multiply odd digits by 2
-                n = int(n) * 2
-            list_num.append(int(n - 9 if n > 9 else n))  # subtract 9 to number over 9
+                n *= 2
+            list_num.append(n-9 if n > 9 else n)  # subtract 9 to number over 9
         n = sum(list_num) % 10
         return num + str(10 - n if n else n)
 
