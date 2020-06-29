@@ -1,9 +1,10 @@
 # JetBrains Academy/Python Developer
 # Project: Simple Banking System
-# Stage 2/4: Luhn algorithm
+# Stage 3/4: I'm so lite
 
-from random import sample, randint
+import sqlite3
 from datetime import datetime
+from random import sample, randint
 
 
 class Card:
@@ -15,12 +16,11 @@ class Card:
 
 
 class Account(Card):
-    """Customer account, upon initialization takes the client id.
-    Since, by condition, a client can have only one bank card, then client id = card id."""
+    """Customer account. Since, by condition, a client can have only one bank card, then client id = card id."""
     def __init__(self):
-        self.id = int(datetime.today().strftime("%d%H%M%S")) + randint(10, 20) * 10  # generator of account identifier
+        self.id = randint(100000000, 999999999) * 10                        # casual generator of account identifier
         self.number = self.luhn(str(4000000000000000 + self.id))            # generator of 16 digits number of the card
-        self.pin = ''.join(map(str, sample(range(0, 9), 4)))                # generator of random 4 digits pin code
+        self.pin = ''.join(map(str, sample(range(1, 9), 4)))                # generator of random 4 digits pin code
 
     @staticmethod
     def luhn(num):
@@ -73,23 +73,58 @@ class Menu:
         self.__choice = '0'
 
 
+class DataBase:
+    def __init__(self):
+        # init ours database
+        self.conn = sqlite3.connect("card.s3db")
+        self.cursor = self.conn.cursor()
+        # create the table
+        try:
+            self.cursor.execute('''CREATE TABLE IF NOT EXISTS card 
+            (id INTEGER, number TEXT, pin TEXT, balance INTEGER DEFAULT 0)''')
+        except sqlite3.OperationalError:
+            pass
+
+    def __del__(self):
+        """Frivolous, complacent and unfounded confidence in a successful outcome. =)"""
+        self.conn.close()
+
+    def add(self, account):
+        """Gets an instance of an account and add it to the database."""
+        self.cursor.execute(f'INSERT INTO card VALUES ({account.id}, {account.number}, {account.pin}, "0")''')
+        self.conn.commit()
+
+    def get(self, number):
+        """Returns an instance of an account by card number."""
+        acc = self.cursor.execute(f'SELECT * FROM card WHERE number={number}').fetchone()
+        if acc:
+            account = Account()
+            account.id, account.number, account.pin, account.balance = acc
+            return account
+        return None
+
+    def get_all(self):
+        """For tests"""
+        return self.cursor.execute(f'SELECT * FROM card')
+
+
 class Banking:
     """Banking system"""
     def __init__(self):
         self.menu = Menu()
+        self.db = DataBase()
         self.current_account = None
-        self.accounts = {}  # temporary dict (database) for accounts
 
     def create_account(self):
         """Creates a customer account"""
         account = Account()
-        self.accounts[account.id] = account  # temporary solution
+        self.db.add(account)  # add account to database
         # show the result according to the condition of the task
-        print('Your card has been created')
+        print('\nYour card has been created')
         print('Your card number:')
-        print(f'{self.accounts[account.id].number}')
+        print(f'{account.number}')
         print('Your card PIN:')
-        print(f'{self.accounts[account.id].pin}\n')
+        print(f'{account.pin}\n')
 
     def login(self):
         """Implements user login to the account.
@@ -102,22 +137,22 @@ class Banking:
         print('Enter your PIN:')
         pin = input()
         # check the correctness of the entered data
-        for account in self.accounts.values():
-            if account.number == number:
-                if account.pin == pin:
-                    print('You have successfully logged in!\n')
-                    self.current_account = account
-                    return
-        print('Wrong card number or PIN!\n')
+        account = self.db.get(number)
+        if account:
+            if account.pin == pin:
+                print('\nYou have successfully logged in!\n')
+                self.current_account = account
+                return
+        print('\nWrong card number or PIN!\n')
         self.menu.back_to_main()
 
     def show_balance(self):
         """Shows client balance"""
-        print(f'Balance: {self.current_account.balance}\n')
+        print(f'\nBalance: {self.current_account.balance}\n')
 
     def log_out(self):
         """Shows the main menu, allowing the client to log in with another account."""
-        print('You have successfully logged out!\n')
+        print('\nYou have successfully logged out!\n')
         self.menu.back_to_main()
 
     def run(self):
@@ -134,7 +169,7 @@ class Banking:
             elif self.menu == '2.2':
                 self.log_out()
             else:
-                print('Bye!')
+                print('\nBye!')
                 break
 
 
