@@ -1,9 +1,8 @@
 # JetBrains Academy/Python Developer
 # Project: Simple Banking System
-# Stage 3/4: I'm so lite
+# Stage 4/4: Advanced system
 
 import sqlite3
-from datetime import datetime
 from random import sample, randint
 
 
@@ -58,7 +57,10 @@ class Menu:
     @staticmethod
     def __show_account_menu():
         print('1. Balance')
-        print('2. Log out')
+        print('2. Add income')
+        print('3. Do transfer')
+        print('4. Close account')
+        print('5. Log out')
         print('0. Exit')
 
     def show_and_get_choice(self):
@@ -91,11 +93,11 @@ class DataBase:
 
     def add(self, account):
         """Gets an instance of an account and add it to the database."""
-        self.cursor.execute(f'INSERT INTO card VALUES ({account.id}, {account.number}, {account.pin}, "0")''')
+        self.cursor.execute(f'INSERT INTO card VALUES ({account.id}, {account.number}, {account.pin}, "0")')
         self.conn.commit()
 
     def get(self, number):
-        """Returns an instance of an account by card number."""
+        """Returns an instance of an account by card number. Otherwise returns None."""
         acc = self.cursor.execute(f'SELECT * FROM card WHERE number={number}').fetchone()
         if acc:
             account = Account()
@@ -106,6 +108,16 @@ class DataBase:
     def get_all(self):
         """For tests"""
         return self.cursor.execute(f'SELECT * FROM card')
+
+    def set_balance(self, number, balance):
+        """Accepts the card number and sets the transferred balance for it."""
+        self.cursor.execute(f'UPDATE card SET balance = {balance} WHERE number = {number}')
+        self.conn.commit()
+
+    def delete(self, number):
+        """Deletes a card entry corresponding to the transmitted number."""
+        self.cursor.execute(f'DELETE FROM card WHERE number = {number}')
+        self.conn.commit()
 
 
 class Banking:
@@ -131,8 +143,7 @@ class Banking:
         It asks the client for the card number and pin,
         then reconciles the received data with existing accounts.
         If the entered data is found, displays a menu for the account."""
-
-        print('Enter your card number:')
+        print('\nEnter your card number:')
         number = input()
         print('Enter your PIN:')
         pin = input()
@@ -149,6 +160,44 @@ class Banking:
     def show_balance(self):
         """Shows client balance"""
         print(f'\nBalance: {self.current_account.balance}\n')
+
+    def add_income(self):
+        """Adds the entered income to the balance of the current account."""
+        print('\nEnter income:')
+        income = int(input())
+        self.current_account.balance += income
+        self.db.set_balance(self.current_account.number, self.current_account.balance)
+        print('Income was added!\n')
+
+    def transfer(self):
+        """It transfers money from the current account to another account.
+        It asks the user for the account number to which he wants to transfer money.
+        Checks the checksum of the entered account number according to the Luhn algorithm."""
+        print('\nTransfer\nEnter card number:')
+        number = input()
+        if number == Account.luhn(number):
+            account = self.db.get(number)
+            if account:
+                print('Enter how much money you want to transfer:')
+                transfer = int(input())
+                if self.current_account.balance >= transfer:
+                    self.db.set_balance(number, account.balance + transfer)
+                    print(f'>>> num: {self.current_account.number} bal: {self.current_account.balance}')
+                    self.current_account.balance -= transfer
+                    self.db.set_balance(self.current_account.number, self.current_account.balance)
+                    print(f'>>> num: {self.current_account.number} bal: {self.current_account.balance}')
+                    print('Success!\n')
+                else:
+                    print('Not enough money!\n')
+            else:
+                print('Such a card does not exist.\n')
+        else:
+            print('Probably you made mistake in the card number. Please try again!\n')
+
+    def close_account(self):
+        """Deletes the current account."""
+        self.db.delete(self.current_account.number)
+        print('\nThe account has been closed!\n')
 
     def log_out(self):
         """Shows the main menu, allowing the client to log in with another account."""
@@ -167,6 +216,12 @@ class Banking:
             elif self.menu == '2.1':
                 self.show_balance()
             elif self.menu == '2.2':
+                self.add_income()
+            elif self.menu == '2.3':
+                self.transfer()
+            elif self.menu == '2.4':
+                self.close_account()
+            elif self.menu == '2.5':
                 self.log_out()
             else:
                 print('\nBye!')
